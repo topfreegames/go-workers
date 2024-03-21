@@ -24,7 +24,7 @@ func (s *scheduled) start() {
 
 			s.poll()
 
-			time.Sleep(time.Duration(Config.PollInterval) * time.Second)
+			time.Sleep(time.Duration(Config.PoolInterval) * time.Second)
 		}
 	})()
 }
