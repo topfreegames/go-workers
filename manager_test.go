@@ -54,7 +54,7 @@ func ManagerSpec(c gospec.Context) {
 
 		c.Specify("sets job function", func() {
 			manager := newManager("myqueue", testJob, 10)
-			c.Expect(fmt.Sprint(manager.job), Equals, fmt.Sprint(testJob))
+			c.Expect(fmt.Sprintf("%p", manager.job), Equals, fmt.Sprintf("%p", testJob))
 		})
 
 		c.Specify("sets worker concurrency", func() {

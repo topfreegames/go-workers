@@ -1,0 +1,19 @@
+version: '2.2'
+
+services:
+  redis:
+    image: redis:5-alpine
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    networks:
+      - go-workers
+
+networks:
+  go-workers:
+    driver: bridge
+    name: go-workers
