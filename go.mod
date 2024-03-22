@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/bitly/go-simplejson v0.5.1
 	github.com/customerio/gospec v0.0.0-20130710230057-a5cc0e48aa39
-	github.com/garyburd/redigo v1.6.4
+	github.com/gomodule/redigo v1.9.2
 	github.com/sirupsen/logrus v1.9.3
 )
 
