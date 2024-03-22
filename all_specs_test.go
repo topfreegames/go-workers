@@ -26,8 +26,14 @@ func TestAllSpecs(t *testing.T) {
 		})
 
 		conn := Config.Pool.Get()
-		conn.Do("flushdb")
-		conn.Close()
+		_, err := conn.Do("flushdb")
+		if err != nil {
+			panic("failed to flush db: " + err.Error())
+		}
+		err = conn.Close()
+		if err != nil {
+			panic("failed close connection: " + err.Error())
+		}
 	}
 
 	// List all specs here
