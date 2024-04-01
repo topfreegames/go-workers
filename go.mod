@@ -1,4 +1,4 @@
-module go-workers
+module github.com/topfreegames/go-workers
 
 go 1.19
 
