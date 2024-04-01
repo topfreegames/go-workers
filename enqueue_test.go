@@ -5,7 +5,8 @@ import (
 
 	"github.com/customerio/gospec"
 	. "github.com/customerio/gospec"
-	"github.com/garyburd/redigo/redis"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 func EnqueueSpec(c gospec.Context) {
@@ -17,8 +18,12 @@ func EnqueueSpec(c gospec.Context) {
 		defer conn.Close()
 
 		c.Specify("makes the queue available", func() {
-			Enqueue("enqueue1", "Add", []int{1, 2})
+			enqueue, err := Enqueue("enqueue1", "Add", []int{1, 2})
+			if err != nil {
+				panic(err)
+			}
 
+			c.Expect(enqueue, Not(Equals), "")
 			found, _ := redis.Bool(conn.Do("sismember", "prod:queues", "enqueue1"))
 			c.Expect(found, IsTrue)
 		})
@@ -103,7 +108,10 @@ func EnqueueSpec(c gospec.Context) {
 
 			bytes, _ := redis.Bytes(conn.Do("lpop", "prod:queue:enqueue7"))
 			var result map[string]interface{}
-			json.Unmarshal(bytes, &result)
+			err := json.Unmarshal(bytes, &result)
+			if err != nil {
+				panic(err)
+			}
 			c.Expect(result["class"], Equals, "Compare")
 
 			retryOptions := result["retry_options"].(map[string]interface{})

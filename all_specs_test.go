@@ -18,16 +18,22 @@ func TestAllSpecs(t *testing.T) {
 	r.Parallel = false
 
 	r.BeforeEach = func() {
-		Configure(map[string]string{
-			"server":   "localhost:6379",
-			"process":  "1",
-			"database": "15",
-			"pool":     "1",
+		Configure(Options{
+			Address:   "localhost:6379",
+			ProcessID: "1",
+			Database:  "15",
+			PoolSize:  1,
 		})
 
 		conn := Config.Pool.Get()
-		conn.Do("flushdb")
-		conn.Close()
+		_, err := conn.Do("flushdb")
+		if err != nil {
+			panic("failed to flush db: " + err.Error())
+		}
+		err = conn.Close()
+		if err != nil {
+			panic("failed close connection: " + err.Error())
+		}
 	}
 
 	// List all specs here

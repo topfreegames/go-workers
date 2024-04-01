@@ -7,7 +7,7 @@ import (
 
 	"github.com/customerio/gospec"
 	. "github.com/customerio/gospec"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 type customMid struct {
@@ -37,6 +37,7 @@ func (m *customMid) Trace() []string {
 }
 
 func ManagerSpec(c gospec.Context) {
+	const queueName = "queue-manager"
 	processed := make(chan *Args)
 
 	testJob := (func(message *Msg) {
@@ -48,28 +49,28 @@ func ManagerSpec(c gospec.Context) {
 
 	c.Specify("newManager", func() {
 		c.Specify("sets queue with namespace", func() {
-			manager := newManager("myqueue", testJob, 10)
-			c.Expect(manager.queue, Equals, "prod:queue:myqueue")
+			manager := newManager(queueName, testJob, 10)
+			c.Expect(manager.queue, Equals, fmt.Sprintf("prod:queue:%s", queueName))
 		})
 
 		c.Specify("sets job function", func() {
-			manager := newManager("myqueue", testJob, 10)
-			c.Expect(fmt.Sprint(manager.job), Equals, fmt.Sprint(testJob))
+			manager := newManager(queueName, testJob, 10)
+			c.Expect(fmt.Sprintf("%p", manager.job), Equals, fmt.Sprintf("%p", testJob))
 		})
 
 		c.Specify("sets worker concurrency", func() {
-			manager := newManager("myqueue", testJob, 10)
+			manager := newManager(queueName, testJob, 10)
 			c.Expect(manager.concurrency, Equals, 10)
 		})
 
 		c.Specify("no per-manager middleware means 'use global Middleware object'", func() {
-			manager := newManager("myqueue", testJob, 10)
+			manager := newManager(queueName, testJob, 10)
 			c.Expect(manager.mids, Equals, Middleware)
 		})
 
 		c.Specify("per-manager middlewares create separate middleware chains", func() {
 			mid1 := customMid{Base: "0"}
-			manager := newManager("myqueue", testJob, 10, &mid1)
+			manager := newManager(queueName, testJob, 10, &mid1)
 			c.Expect(manager.mids, Not(Equals), Middleware)
 			c.Expect(len(manager.mids.actions), Equals, len(Middleware.actions)+1)
 		})

@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 const (
@@ -24,12 +24,12 @@ type EnqueueData struct {
 }
 
 type EnqueueOptions struct {
-	RetryCount        int               `json:"retry_count,omitempty"`
-	Retry             bool              `json:"retry,omitempty"`
-	RetryMax          int               `json:"retry_max,omitempty"`
-	At                float64           `json:"at,omitempty"`
-	RetryOptions      RetryOptions      `json:"retry_options,omitempty"`
-	ConnectionOptions map[string]string `json:"connection_options,omitempty"`
+	RetryCount        int          `json:"retry_count,omitempty"`
+	Retry             bool         `json:"retry,omitempty"`
+	RetryMax          int          `json:"retry_max,omitempty"`
+	At                float64      `json:"at,omitempty"`
+	RetryOptions      RetryOptions `json:"retry_options,omitempty"`
+	ConnectionOptions Options      `json:"connection_options,omitempty"`
 }
 
 type RetryOptions struct {
@@ -83,12 +83,18 @@ func EnqueueWithOptions(queue, class string, args interface{}, opts EnqueueOptio
 	}
 
 	var conn redis.Conn
-	if len(opts.ConnectionOptions) == 0 {
+	if opts.ConnectionOptions.Address == "" {
+		Logger.Debug("missing redis Address in EnqueueWithOptions. using default pool")
 		conn = Config.Pool.Get()
 	} else {
 		conn = GetConnectionPool(opts.ConnectionOptions).Get()
 	}
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		err := conn.Close()
+		if err != nil {
+			Logger.Errorf("failed to close Redis connection in EnqueueWithOptions: %w", err)
+		}
+	}(conn)
 
 	_, err = conn.Do("sadd", Config.Namespace+"queues", queue)
 	if err != nil {

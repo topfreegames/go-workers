@@ -3,17 +3,19 @@ package workers
 import (
 	"github.com/customerio/gospec"
 	. "github.com/customerio/gospec"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"time"
 )
 
 func MiddlewareStatsSpec(c gospec.Context) {
+	const queueName = "queue-middleware_stats"
+
 	var job = (func(message *Msg) {
 		// noop
 	})
 
 	layout := "2006-01-02"
-	manager := newManager("myqueue", job, 1)
+	manager := newManager(queueName, job, 1)
 	worker := newWorker(manager)
 	message, _ := NewMsg("{\"jid\":\"2\",\"retry\":true}")
 
@@ -44,7 +46,7 @@ func MiddlewareStatsSpec(c gospec.Context) {
 			panic("AHHHH")
 		})
 
-		manager := newManager("myqueue", job, 1)
+		manager := newManager(queueName, job, 1)
 		worker := newWorker(manager)
 
 		c.Specify("increments failed stats", func() {

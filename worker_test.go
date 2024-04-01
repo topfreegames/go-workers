@@ -37,13 +37,15 @@ func confirm(manager *manager) (msg *Msg) {
 }
 
 func WorkerSpec(c gospec.Context) {
+	const queueName = "queue-worker_test"
+
 	var processed = make(chan *Args)
 
 	var testJob = (func(message *Msg) {
 		processed <- message.Args()
 	})
 
-	manager := newManager("myqueue", testJob, 1)
+	manager := newManager(queueName, testJob, 1)
 
 	c.Specify("newWorker", func() {
 		c.Specify("it returns an instance of worker with connection to manager", func() {
@@ -125,7 +127,7 @@ func WorkerSpec(c gospec.Context) {
 				panic("AHHHHHHHHH")
 			})
 
-			manager := newManager("myqueue", panicJob, 1)
+			manager := newManager(queueName, panicJob, 1)
 			worker := newWorker(manager)
 
 			go worker.work(messages)

@@ -1,49 +1,56 @@
 package workers
 
 import (
-	"strconv"
+	"fmt"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
-type config struct {
+type Options struct {
+	Address      string
+	Password     string
+	Database     string
+	ProcessID    string
+	Namespace    string
+	PoolSize     int
+	PoolInterval int
+	DialOptions  []redis.DialOption
+}
+
+type WorkerConfig struct {
 	processId    string
 	Namespace    string
-	PollInterval int
+	PoolInterval int
 	Pool         *redis.Pool
 	Fetch        func(queue string) Fetcher
 }
 
-var Config *config
+var Config *WorkerConfig
 
-func Configure(options map[string]string) {
-
+func Configure(options Options) {
 	var namespace string
-	var pollInterval int
 
-	if options["server"] == "" {
-		panic("Configure requires a 'server' option, which identifies a Redis instance")
+	if options.Address == "" {
+		panic("Configure requires a 'Address' option, which identifies a Redis instance")
 	}
-	if options["process"] == "" {
-		panic("Configure requires a 'process' option, which uniquely identifies this instance")
+	if options.ProcessID == "" {
+		panic("Configure requires a 'ProcessID' option, which uniquely identifies this instance")
 	}
-	if options["pool"] == "" {
-		options["pool"] = "1"
+	if options.PoolSize <= 0 {
+		options.PoolSize = 1
 	}
-	if options["namespace"] != "" {
-		namespace = options["namespace"] + ":"
+	if options.Namespace != "" {
+		namespace = options.Namespace + ":"
 	}
-	if seconds, err := strconv.Atoi(options["poll_interval"]); err == nil {
-		pollInterval = seconds
-	} else {
-		pollInterval = 15
+	if options.PoolInterval <= 0 {
+		options.PoolInterval = 15
 	}
 
-	Config = &config{
-		options["process"],
+	Config = &WorkerConfig{
+		options.ProcessID,
 		namespace,
-		pollInterval,
+		options.PoolInterval,
 		GetConnectionPool(options),
 		func(queue string) Fetcher {
 			return NewFetch(queue, make(chan *Msg), make(chan bool))
@@ -51,27 +58,28 @@ func Configure(options map[string]string) {
 	}
 }
 
-func GetConnectionPool(options map[string]string) *redis.Pool {
-	poolSize, _ := strconv.Atoi(options["pool"])
-
+func GetConnectionPool(options Options) *redis.Pool {
 	return &redis.Pool{
-		MaxIdle:     poolSize,
+		MaxIdle:     options.PoolSize,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", options["server"])
+			c, err := redis.Dial("tcp", options.Address, options.DialOptions...)
 			if err != nil {
 				return nil, err
 			}
-			if options["password"] != "" {
-				if _, err := c.Do("AUTH", options["password"]); err != nil {
-					c.Close()
+			if options.Password != "" {
+				if _, err := c.Do("AUTH", options.Password); err != nil {
+					if errClose := c.Close(); errClose != nil {
+						return nil, fmt.Errorf("%w. failed to close connection: %s", err, errClose.Error())
+					}
 					return nil, err
 				}
 			}
-			if options["database"] != "" {
-				if _, err := c.Do("SELECT", options["database"]); err != nil {
-					c.Close()
-					return nil, err
+			if options.Database != "" {
+				if _, err := c.Do("SELECT", options.Database); err != nil {
+					if errClose := c.Close(); errClose != nil {
+						return nil, fmt.Errorf("%w. failed to close connection: %s", err, errClose.Error())
+					}
 				}
 			}
 			return c, err

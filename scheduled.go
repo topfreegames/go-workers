@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 type scheduled struct {
@@ -24,7 +24,7 @@ func (s *scheduled) start() {
 
 			s.poll()
 
-			time.Sleep(time.Duration(Config.PollInterval) * time.Second)
+			time.Sleep(time.Duration(Config.PoolInterval) * time.Second)
 		}
 	})()
 }

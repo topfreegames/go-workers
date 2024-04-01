@@ -9,20 +9,25 @@ import (
 
 var called chan bool
 
-func myJob(message *Msg) {
+func myJob(_ *Msg) {
 	called <- true
 }
 
 func WorkersSpec(c gospec.Context) {
+	const queueName = "queue-workers"
+
 	c.Specify("Workers", func() {
 		c.Specify("allows running in tests", func() {
 			called = make(chan bool)
 
-			Process("myqueue", myJob, 10)
+			Process(queueName, myJob, 10)
 
 			Start()
 
-			Enqueue("myqueue", "Add", []int{1, 2})
+			_, err := Enqueue(queueName, "Add", []int{1, 2})
+			if err != nil {
+				panic(err)
+			}
 			<-called
 
 			Quit()
@@ -32,14 +37,14 @@ func WorkersSpec(c gospec.Context) {
 		//c.Specify("allows starting and stopping multiple times", func() {
 		//	called = make(chan bool)
 
-		//	Process("myqueue", myJob, 10)
+		//	Process(queueName, myJob, 10)
 
 		//	Start()
 		//	Quit()
 
 		//	Start()
 
-		//	Enqueue("myqueue", "Add", []int{1, 2})
+		//	Enqueue(queueName, "Add", []int{1, 2})
 		//	<-called
 
 		//	Quit()
